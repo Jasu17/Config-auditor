@@ -2,24 +2,27 @@
 
 audit_ssh(){
     local config="/etc/ssh/sshd_config"
+    local results=()
 
     echo "--- ssh Audit ---"
 
     if grep -q "^PermitRootLogin no" "$config";then
-        print_ok "Root login disabled"
+        results+=("OK|Root login disabled")
     else
-        print_fail "Root login enabled"
+        results+=("FAIL|Root login enabled")
     fi
 
     if grep -q "^PasswordAuthentication no" "$config";then
-        print_ok "Password authentication disabled"
+        results+=("OK|Password authentication disabled")
     else
-        print_warn "Password authentication enabled"
+        results+=("WARN|Password authentication enabled")
     fi
 
-    if grep -q "^Port 22"; then
-        print_warn "Using default SSH port"
+    if grep -q "^Port 22" "$config"; then
+        results+=("WARN|Using default SSH port")
     else
-        print_ok "Non-default SSH port"
+        results+=("OK|Non-default SSH port")
     fi
+
+
 }
