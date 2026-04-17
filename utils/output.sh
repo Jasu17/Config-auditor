@@ -8,11 +8,11 @@ RED="\e[31m"
 RESET="\e[0m"
 
 print_ok(){
-    echo -e "${GREEN}[OK]${RESET} $1"
+    printf "${GREEN}[OK]${RESET} %s\n" "$1"
 }
 print_warn(){
-    echo e- "${YELLOW}[WARN]${RESET} $1"
+    printf "${YELLOW}[WARN]${RESET} %s\n" "$1"
 }
 print_fail(){
-    echo -e "${RED}[FAIL]${RESET} $1"
+    printf "${RED}[FAIL]${RESET} %s\n" "$1"
 }

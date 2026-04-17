@@ -6,6 +6,8 @@ source checks/firewall.sh
 source checks/permissions.sh
 source checks/practices.sh
 
+source utils/output.sh
+
 process_results(){
     while IFS="|" read -r status message; do
         case $status in
