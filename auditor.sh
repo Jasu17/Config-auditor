@@ -11,6 +11,7 @@ GLOBAL_SCORE=0
 GLOBAL_CHECKS=0
 JSON_OUTPUT="{\"results\":["
 FIRST_ENTRY=true
+FAIL_UNDER=""
 
 process_results(){
     local total_score=0
@@ -51,7 +52,7 @@ process_results(){
     GLOBAL_CHECKS=$((GLOBAL_CHECKS + total_checks))
 }
 
-run_audit(){
+run_audit() {
     echo "=== System Audit ==="
 
     echo "---- SSH Audit ----"
@@ -63,29 +64,38 @@ run_audit(){
     echo "---- Bad Practices ----"
     process_results < <(audit_practices)
 
-    if [ "$OUTPUT_FORMAT" == "json" ]; then
+    # Score calculation
+    if [ "$GLOBAL_CHECKS" -gt 0 ]; then
         local max_score=$((GLOBAL_CHECKS * 2))
         local final_score=$((100 - (GLOBAL_SCORE * 100 / max_score)))
+    else
+        local final_score=0
+    fi
 
-        JSON_OUTPUT+="],\"final_score\":$final_score}"
+    # ---- OUTPUT ----
+    if [[ "$OUTPUT_FORMAT" == "json" ]]; then
+        JSON_OUTPUT+="],\"score\":$final_score}"
         echo "$JSON_OUTPUT"
-
     else
         echo "=== Final Score ==="
-        if [ "$GLOBAL_CHECKS" -gt 0 ]; then
-            local max_score=$((GLOBAL_CHECKS * 2))
-            local final_score=$((100 - (GLOBAL_SCORE * 100 / max_score)))
+        echo "Security score: $final_score / 100"
 
-            echo "Security score: $final_score / 100"
-        
-            if [ "$final_score" -ge 80 ]; then
-                print_ok "System is fairly secure"
-            elif [ "$final_score" -ge 60 ]; then
-                print_warn "System has security weaknesses"
-            else
-                print_fail "System is insecure"
+        if [ "$final_score" -ge 80 ]; then
+            print_ok "System is fairly secure"
+        elif [ "$final_score" -ge 60 ]; then
+            print_warn "System has security weaknesses"
+        else
+            print_fail "System is insecure"
+        fi
+    fi
 
+    # ---- FAIL-UNDER ----
+    if [ -n "$FAIL_UNDER" ]; then
+        if [ "$final_score" -lt "$FAIL_UNDER" ]; then
+            if [[ "$OUTPUT_FORMAT" == "plain" ]]; then
+                print_fail "Score below threshold ($final_score < $FAIL_UNDER)"
             fi
+            exit 1
         fi
     fi
 }
@@ -102,9 +112,12 @@ for arg in "$@"; do
         --audit)
             RUN_AUDIT=true
             ;;
+        --fail-under=*)
+            FAIL_UNDER="${arg#*=}"
+            ;;
         *)
             echo "Unknown option: $arg"
-            echo "Usage: $0 [--json] [--audit]"
+            echo "Usage: $0 --audit [--json] [--fail-under=N]"
             exit 1
             ;;
     esac
