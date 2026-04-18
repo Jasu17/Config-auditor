@@ -3,7 +3,7 @@
 audit_practices() {
     local results=()
 
-    # --- Users without password ---
+    # ---- Usuarios sin contraseña ----
     local empty_pass
     empty_pass=$(awk -F: '($2=="") {print $1}' /etc/shadow 2>/dev/null)
 
@@ -13,7 +13,7 @@ audit_practices() {
         results+=("OK|No users without password")
     fi
 
-    # --- Uncommon shells --- 
+    # ---- Shells sospechosos ----
     local invalid_shells
     invalid_shells=$(awk -F: '($7!~/(bash|sh|zsh|nologin|false)$/){print $1}' /etc/passwd)
 
@@ -22,35 +22,38 @@ audit_practices() {
     else
         results+=("OK|User shells look standard")
     fi
-    
-    # --- Insecure PATH ---
+
+    # ---- PATH estructura ----
     if echo "$PATH" | grep -q "::"; then
         results+=("WARN|Empty entry in PATH detected")
     else
         results+=("OK|PATH structure looks clean")
     fi
 
-    if echo "$PATH" | grep -qE "(^|:)\.(\:|$)"; then
-        results+=("FAIL|Current directory in PATH (.) detected")
+    # ---- PATH inseguro (.) ----
+    if echo "$PATH" | grep -qE '(^|:)\.(:|$)'; then
+        results+=("FAIL|Current directory in PATH detected")
     else
         results+=("OK|No unsafe PATH entries")
     fi
 
-    # --- .ssh permissions ---
-    local ssh_issues
-    ssh_issues=$(find /home -type d -name ".ssh" -perm -0002 2>/dev/null)
+    # ---- .ssh permissions ----
+    if [ -d /home ]; then
+        local ssh_issues
+        ssh_issues=$(find /home -type d -name ".ssh" -perm -0002 2>/dev/null)
 
-    if [ -n "$ssh_issues" ]; then
-        results+=("FAIL|Insecure permissions in .ssh directories")
-    else
-        results+=("OK|.ssh directories are secure")
+        if [ -n "$ssh_issues" ]; then
+            results+=("FAIL|Insecure permissions in .ssh directories")
+        else
+            results+=("OK|.ssh directories are secure")
+        fi
     fi
 
-    # ---- Root PATH sanity ----
-    local root_path
-    root_path=$(grep "^root:" /etc/passwd | cut -d: -f7)
+    # ---- Root shell ----
+    local root_shell
+    root_shell=$(awk -F: '$1=="root"{print $7}' /etc/passwd)
 
-    if [ -z "$root_path" ]; then
+    if [ -z "$root_shell" ]; then
         results+=("WARN|Root shell not properly defined")
     else
         results+=("OK|Root shell configured")
