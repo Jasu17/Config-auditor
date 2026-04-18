@@ -15,10 +15,17 @@ FAIL_UNDER=""
 REAL_USER=${SUDO_USER:-$USER}
 
 run_as_user() {
+    local func="$1"
+
     if [ "$EUID" -eq 0 ] && [ -n "$SUDO_USER" ]; then
-        sudo -u "$SUDO_USER" "$@"
+        sudo -u "$SUDO_USER" bash -c "
+            source utils/output.sh
+            source checks/permissions.sh
+            source checks/practices.sh
+            $func
+        "
     else
-        "$@"
+        $func
     fi
 }
 
@@ -69,9 +76,9 @@ run_audit() {
     echo "---- Firewall Audit ----"
     process_results < <(audit_firewall)
     echo "---- Permissions Audit ----"
-    run_as_user process_results < <(audit_permissions)
+    run_as_user audit_permissions || process_results
     echo "---- Bad Practices ----"
-    run_as_user process_results < <(audit_practices)
+    run_as_user audit_practices || process_results
 
     # Score calculation
     if [ "$GLOBAL_CHECKS" -gt 0 ]; then
