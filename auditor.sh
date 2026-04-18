@@ -12,6 +12,15 @@ GLOBAL_CHECKS=0
 JSON_OUTPUT="{\"results\":["
 FIRST_ENTRY=true
 FAIL_UNDER=""
+REAL_USER=${SUDO_USER:-$USER}
+
+run_as_user() {
+    if [ "$EUID" -eq 0 ] && [ -n "$SUDO_USER" ]; then
+        sudo -u "$SUDO_USER" "$@"
+    else
+        "$@"
+    fi
+}
 
 process_results(){
     local total_score=0
@@ -60,9 +69,9 @@ run_audit() {
     echo "---- Firewall Audit ----"
     process_results < <(audit_firewall)
     echo "---- Permissions Audit ----"
-    process_results < <(audit_permissions)
+    run_as_user process_results < <(audit_permissions)
     echo "---- Bad Practices ----"
-    process_results < <(audit_practices)
+    run_as_user process_results < <(audit_practices)
 
     # Score calculation
     if [ "$GLOBAL_CHECKS" -gt 0 ]; then
