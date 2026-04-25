@@ -38,16 +38,16 @@ process_results(){
     local total_score=0
     local total_checks=0
 
-    while IFS="|" read -r status message; do
+    while IFS="|" read -r status message fix; do
         if [[ "$OUTPUT_FORMAT" == "plain" ]]; then
             case $status in
                 OK) print_ok "$message" ;;
                 WARN) 
-                    print_warn "$message" 
+                    print_warn "$message" "$fix"
                     total_score=$((total_score + 1))
                     ;;
                 FAIL) 
-                    print_fail "$message" 
+                    print_fail "$message" "$fix"
                     total_score=$((total_score + 2))
                     ;;
             esac
@@ -57,7 +57,7 @@ process_results(){
                 JSON_OUTPUT+=","
             fi
             
-            JSON_OUTPUT+="{\"status\":\"$status\",\"message\":\"$message\"}"
+            JSON_OUTPUT+="{\"status\":\"$status\",\"message\":\"$message\",\"fix\":\"$fix\"}"
             FIRST_ENTRY=false
             
             case $status in
