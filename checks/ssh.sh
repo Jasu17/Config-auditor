@@ -54,5 +54,28 @@ audit_ssh() {
         results+=("OK|Non-default SSH port ($port)")
     fi
 
+    # --- MaxAuthTries ---
+    local max_auth
+    max_auth=$(get_val "MaxAuthTries")
+    if [[ -z "$max_auth" || "$max_auth" -gt 3 ]]; then
+        resukts+=("WARN|MaxAuthTries not restricted (value: ${max_auth:-default})")
+    else
+        results+=("OK|MaxAuthTries restricted (value: $max_auth)")
+    fi
+
+    # --- X11Forwarding ---
+    local x11
+    x11=$(get_val "X11Forwarding")
+    [[ "${x11,,}" == "yes" ]] \
+        && results+=("WARN|X11 forwarding enabled") \
+        || results+=("OK|X11 forwarding disabled")
+
+    # --- AllowTcpForwarding ---
+    local tcp_fwd
+    tcp_fwd=$(get_val "AllowTcpForwarding")
+    [[ "${tcp_fwd,,}" == "yes" ]] \
+        && results+=("WARN|TCP forwarding enabled") \
+        || results+=("OK|TCP forwarding disabled")
+
     printf "%s\n" "${results[@]}"
 }
