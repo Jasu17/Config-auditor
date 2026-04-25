@@ -26,7 +26,7 @@ audit_firewall(){
             && results+=("OK|Default incoming policy is deny") \
             || results+=("WARN|Default incoming policy is not deny")
 
-        ufw status 2>/dev/null | grep -q "22" \
+        ufw status 2>/dev/null | grep -qE '\b22\b' \
             && results+=("WARN|SSH port exposed via UFW") \
             || results+=("OK|SSH port not explicitly exposed")
 
