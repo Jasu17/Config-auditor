@@ -69,15 +69,17 @@ process_results(){
 }
 
 run_audit() {
-    echo "=== System Audit ==="
+    if [[ "$OUTPUT_FORMAT" == "plain" ]]; then
+        echo "=== System Audit ==="
+    fi
 
-    echo "---- SSH Audit ----"
+    [[ "$OUTPUT_FORMAT" == "plain" ]] && echo "---- SSH Audit ----"
     process_results < <(audit_ssh)
-    echo "---- Firewall Audit ----"
+    [[ "$OUTPUT_FORMAT" == "plain" ]] && echo "---- Firewall Audit ----"
     process_results < <(audit_firewall)
-    echo "---- Permissions Audit ----"
+    [[ "$OUTPUT_FORMAT" == "plain" ]] && echo "---- Permissions Audit ----"
     run_as_user audit_permissions || process_results
-    echo "---- Bad Practices ----"
+    [[ "$OUTPUT_FORMAT" == "plain" ]] && echo "---- Bad Practices ----"
     run_as_user audit_practices || process_results
 
     # Score calculation
