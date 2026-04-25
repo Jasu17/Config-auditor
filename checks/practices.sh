@@ -15,8 +15,7 @@ audit_practices() {
 
     # ---- Shells sospechosos ----
     local invalid_shells
-    invalid_shells=$(awk -F: '($7!~/(bash|sh|zsh|nologin|false)$/){print $1}' /etc/passwd)
-
+    invalid_shells=$(awk -F: '($7!~/\/(bash|sh|zsh|fish|dash|nologin|false|sync)$/){print $1}' /etc/passwd)
     if [ -n "$invalid_shells" ]; then
         results+=("WARN|Users with uncommon shells detected")
     else
