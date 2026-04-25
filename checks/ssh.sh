@@ -11,21 +11,31 @@ audit_ssh() {
         return
     fi
 
-    # clean_config whitout comments and empty lines
+    # clean_config whitout comments and empty lines, normalize whitespace
     local clean_config
-    clean_config=$(grep -vE '^\s*#' "$config" | sed '/^\s*$/d')
+    clean_config=$(grep -vE '^\s*#' "$config" | sed '/^\s*$/d' | sed 's/[[:space:]]\+/ /g')
+    
+    # helper: get normalized value for a directive
+    get_val(){
+        echo "$clean_config" | grep -i "^$1" | awk '{print $2}' | head -n1
+    }
+    
 
     # ---- Root login ----
-    if echo "$clean_config" | grep -qi "PermitRootLogin no"; then
+    local root_login
+    root_login=$(get_val "PermitRootLogin")
+    if [[ "${root_login,,}" == "no" ]]; then
         results+=("OK|Root login disabled")
-    elif echo "$clean_config" | grep -qi "PermitRootLogin prohibit-password"; then
+    elif [[ "${root_login,,}" == "prohibit-password" ]]; then
         results+=("WARN|Root login allowed with key only")
     else
         results+=("FAIL|Root login enabled")
     fi
 
     # ---- Password auth ----
-    if echo "$clean_config" | grep -qi "PasswordAuthentication no"; then
+    local pwd_auth
+    pwd_auth=$(get_val "PasswordAuthentication")
+    if [[ "${pwd_auth,,}" == "no" ]]; then
         results+=("OK|Password authentication disabled")
     else
         results+=("WARN|Password authentication enabled")
@@ -33,9 +43,8 @@ audit_ssh() {
 
     # ---- SSH Port ----
     local port
-    port=$(echo "$clean_config" | grep -i "^Port" | awk '{print $2}' | head -n1)
-
-    if [ -z "$port" ]; then
+    port=$(get_val "Port")
+    if [[ -z "$port" || ! "$port" =~ ^[0-9]+$ ]]; then
         port=22
     fi
 
