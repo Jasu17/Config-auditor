@@ -16,6 +16,8 @@ REAL_USER=${SUDO_USER:-$USER}
 
 run_as_user() {
     local func="$1"
+    local tmpfile
+    tmpfile=$(mktemp)
 
     if [ "$EUID" -eq 0 ] && [ -n "$SUDO_USER" ]; then
         sudo -u "$SUDO_USER" bash -c "
@@ -23,10 +25,13 @@ run_as_user() {
             source checks/permissions.sh
             source checks/practices.sh
             $func
-        "
+        " > "$tmpfile" 2>/dev/null
     else
-        $func
+        $func > "$tmpfile" 2>/dev/null
     fi
+
+    process_results < "$tmpfile"
+    rm -f "$tmpfile"
 }
 
 process_results(){
@@ -78,9 +83,9 @@ run_audit() {
     [[ "$OUTPUT_FORMAT" == "plain" ]] && echo "---- Firewall Audit ----"
     process_results < <(audit_firewall)
     [[ "$OUTPUT_FORMAT" == "plain" ]] && echo "---- Permissions Audit ----"
-    run_as_user audit_permissions || process_results
+    run_as_user audit_permissions 
     [[ "$OUTPUT_FORMAT" == "plain" ]] && echo "---- Bad Practices ----"
-    run_as_user audit_practices || process_results
+    run_as_user audit_practices 
 
     # Score calculation
     if [ "$GLOBAL_CHECKS" -gt 0 ]; then
